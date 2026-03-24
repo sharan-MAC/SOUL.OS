@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user preferences, goals, and persistent memory.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User's unique ID." },
+        "name": { "type": "string", "description": "User's preferred name." },
+        "preferences": { 
+          "type": "object", 
+          "description": "User's AI personality preferences.",
+          "properties": {
+            "tone": { "type": "string" },
+            "interests": { "type": "array", "items": { "type": "string" } },
+            "communicationStyle": { "type": "string", "enum": ["direct", "gentle", "enthusiastic", "analytical"] },
+            "emotionalTriggers": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "experience": { "type": "number", "description": "User's total experience points." },
+        "level": { "type": "number", "description": "User's current level." },
+        "memory": { "type": "string", "description": "Aggregated long-term memory for the AI." },
+        "lastMood": { "type": "string", "description": "Last detected mood." },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "User's role in the system." },
+        "emotionalHistory": {
+          "type": "object",
+          "properties": {
+            "patterns": { "type": "array", "items": { "type": "string" } },
+            "lastCheckIn": { "type": "string", "format": "date-time" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A gamified task or goal for the user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner's UID." },
+        "title": { "type": "string", "description": "Task title." },
+        "description": { "type": "string", "description": "Task details." },
+        "completed": { "type": "boolean", "description": "Whether the task is done." },
+        "xpReward": { "type": "number", "description": "XP awarded on completion." },
+        "category": { "type": "string", "enum": ["productivity", "health", "learning", "other"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "title", "completed"]
+    },
+    "MoodLog": {
+      "title": "Mood Log",
+      "description": "Historical record of user's emotional states.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User's UID." },
+        "mood": { "type": "string", "description": "Detected mood (e.g., happy, stressed)." },
+        "intensity": { "type": "number", "description": "Intensity of the mood (1-10)." },
+        "trigger": { "type": "string", "description": "What triggered this mood." },
+        "cues": { "type": "array", "items": { "type": "string" }, "description": "Detected emotional cues." },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "mood", "timestamp"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Stores chat history for context and memory.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User's UID." },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string", "description": "The message content." },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "role", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User's private profile and memory."
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User's gamified tasks."
+    },
+    "/users/{userId}/moodLogs/{logId}": {
+      "schema": "MoodLog",
+      "description": "User's emotional history."
+    },
+    "/users/{userId}/conversations/{msgId}": {
+      "schema": "Conversation",
+      "description": "User's chat history."
+    }
+  }
+}

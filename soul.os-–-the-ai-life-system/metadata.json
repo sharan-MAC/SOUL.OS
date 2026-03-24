@@ -1,0 +1,7 @@
+{
+  "name": "SOUL.OS – The AI Life System",
+  "description": "SOUL.OS is a launch-ready AI Life System that transforms your daily journey into a gamified, emotionally resonant experience. Featuring a deep personality engine, long-term memory, and future simulation capabilities, it is your ultimate digital guardian and companion.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

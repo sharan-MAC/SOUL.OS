@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: /users/{userId}
+    // Document ID: userId (string)
+    // Fields:
+    //   - uid: string (required)
+    //   - name: string (required)
+    //   - role: string (optional, enum: ['admin', 'user'])
+    //   - preferences: map (optional)
+    //   - experience: number (optional)
+    //   - level: number (optional)
+    //   - memory: string (optional)
+    //   - lastMood: string (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: /users/{userId}/tasks/{taskId}
+    // Document ID: taskId (string)
+    // Fields:
+    //   - uid: string (required)
+    //   - title: string (required)
+    //   - description: string (optional)
+    //   - completed: bool (required)
+    //   - xpReward: number (optional)
+    //   - category: string (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: /users/{userId}/moodLogs/{logId}
+    // Document ID: logId (string)
+    // Fields:
+    //   - uid: string (required)
+    //   - mood: string (required)
+    //   - intensity: number (optional)
+    //   - trigger: string (optional)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: /users/{userId}/conversations/{msgId}
+    // Document ID: msgId (string)
+    // Fields:
+    //   - uid: string (required)
+    //   - role: string (required)
+    //   - content: string (required)
+    //   - timestamp: timestamp (required)
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             request.auth.token.email == "sharanrh297@gmail.com" && 
+             request.auth.token.email_verified == true;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'name', 'createdAt']) &&
+             data.uid == userId &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.createdAt is timestamp &&
+             (!('experience' in data) || data.experience is number) &&
+             (!('level' in data) || data.level is number) &&
+             (!('memory' in data) || (data.memory is string && data.memory.size() < 10000)) &&
+             (!('lastMood' in data) || (data.lastMood is string && data.lastMood.size() < 50)) &&
+             (!('preferences' in data) || data.preferences is map) &&
+             (!('emotionalHistory' in data) || data.emotionalHistory is map) &&
+             (!('role' in data) || data.role in ['admin', 'user']);
+    }
+
+    function isValidTask(data, userId) {
+      return data.keys().hasAll(['uid', 'title', 'completed', 'createdAt']) &&
+             data.uid == userId &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.completed is bool &&
+             data.createdAt is timestamp &&
+             (!('xpReward' in data) || data.xpReward is number) &&
+             (!('category' in data) || (data.category is string && data.category.size() < 50));
+    }
+
+    function isValidMoodLog(data, userId) {
+      return data.keys().hasAll(['uid', 'mood', 'timestamp']) &&
+             data.uid == userId &&
+             data.mood is string && data.mood.size() > 0 && data.mood.size() < 50 &&
+             data.timestamp is timestamp &&
+             (!('intensity' in data) || data.intensity is number) &&
+             (!('trigger' in data) || (data.trigger is string && data.trigger.size() < 500)) &&
+             (!('cues' in data) || data.cues is list);
+    }
+
+    function isValidConversation(data, userId) {
+      return data.keys().hasAll(['uid', 'role', 'content', 'timestamp']) &&
+             data.uid == userId &&
+             data.role in ['user', 'assistant'] &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+             data.timestamp is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data, userId);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUserProfile(request.resource.data, userId);
+
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidTask(request.resource.data, userId);
+        allow update: if (isOwner(userId) || isAdmin()) && isValidTask(request.resource.data, userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /moodLogs/{logId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidMoodLog(request.resource.data, userId);
+        allow update: if (isOwner(userId) || isAdmin()) && isValidMoodLog(request.resource.data, userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /conversations/{msgId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidConversation(request.resource.data, userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+  }
+}
